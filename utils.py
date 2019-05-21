@@ -307,13 +307,23 @@ def reset_track_indexes(data):
     real_number_of_tracks = len(set(data['track']))
     # current_last_particle_index = data['track'].max()
     
+    #@dtype=np.int64
+    #A = dict(zip(original_indexes, fixed_indexes))
     original_indexes = np.array(list(set(data['track'])))
-    fixed_indexes = np.arange(0, real_number_of_tracks, step=1)    
+    fixed_indexes = np.arange(0, real_number_of_tracks, step=1)
     
+    # With these two lists we create a dictionary and map old values to new ones
+    replacement_dict = dict(zip(original_indexes, fixed_indexes))
     tracks_column = data['track']
-    tracks_column.replace(to_replace=original_indexes, value=fixed_indexes, inplace=True)
-    data['track'] = tracks_column
+    data['track'] = tracks_column.map(replacement_dict)
+    
     return data
+# =============================================================================
+#     tracks_column = data['track'].astype('int32')
+#     tracks_column.replace(to_replace=original_indexes, value=fixed_indexes, inplace=True)
+#     data['track'] = tracks_column
+# =============================================================================
+    
     
 
 def play_video_with_labels(videoPath, trajectories, list_of_particles_to_track='all', mean_radius=39):
