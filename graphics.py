@@ -7,6 +7,10 @@ Created on Mon May 13 19:06:04 2019
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.stats import kde
+import trackpy as tp
+from utils import select_tracks_by_lenght
+from calculateVelocity import calculate_jumps
+from graphics_utils import center_spines
 
 
 def densityPlot(position_data, nbins=40):
@@ -58,3 +62,26 @@ def plot_instantaneus_state(trajectories_data, frame=1):
 # =============================================================================
     size = np.sqrt((np.pi/20)*x*y*(fig.dpi**2))
     plt.scatter(sub_data.x, sub_data.y, s=size, edgecolors='k', alpha=0.6)
+    
+    
+def plot_trajectories_by_lenght(data, min_lenght=0, max_lenght=25000):
+    selected_tracks = select_tracks_by_lenght(data, min_lenght, max_lenght)
+    data = data.rename(columns={'track':'particle'})
+    sub_data = data[data['particle'].isin(selected_tracks)]
+    tp.plot_traj(sub_data)
+    
+    
+def plot_2D_jumps(data, interval=1, trajectory=1):
+    sub_data = data[data.track==trajectory]
+    differences = calculate_jumps(sub_data, interval=interval)
+    
+    fig, ax = plt.subplots()
+    center_spines() # Origin as center of axes
+    plt.axis('equal')
+    ax.tick_params(axis='both', which='major', labelsize=5)
+    fig.set_size_inches(4,4)
+    fig.set_dpi(350)
+    ax.scatter(x=differences.dx, y=differences.dy, s=0.05, alpha=0.5)
+    radius = np.sqrt(differences.dx.std()**2 + differences.dy.std()**2)
+    c = plt.Circle((differences.dx.mean(), differences.dy.mean()), radius, color='r', fill=False, alpha=0.5)
+    ax.add_artist(c)

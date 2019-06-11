@@ -8,6 +8,7 @@ Created on Mon Jan 21 17:05:37 2019
 import pandas as pd
 import numpy as np
 from scipy.signal import savgol_filter
+from utils import printp
 
 def findVelocities(trajectories):
     """ This function admits a 'trajectories' dataframe as an input
@@ -25,7 +26,7 @@ def findVelocities(trajectories):
             #Para obviar los casos en los que solo hay una o dos filas de datos
             pass
         else:    
-            print('Deriving velocities for track:', str(item))
+            printp('Deriving velocities for track: '+ str(item) + '/'+ str(len(set(trajectories.track))))
             dvx = pd.DataFrame(np.gradient(sub.x), columns=['vx',])
             dvy = pd.DataFrame(np.gradient(sub.y), columns=['vy',])
         
@@ -58,7 +59,7 @@ def smoothVelocities(velocities, window_length=25, poly_order=3):
             #Para obviar los casos en los que la trayectoria dura menos que la ventana de suavizado
             pass
         else:
-            print('Smoothing velocities for track:', str(item))
+            printp('Smoothing velocities for track: '+ str(item))
             # Savgol filter
             vx = pd.DataFrame(savgol_filter(sub.vx, window_length, poly_order), columns=['vx',])
             vy = pd.DataFrame(savgol_filter(sub.vy, window_length, poly_order), columns=['vy',])
@@ -92,7 +93,7 @@ def smoothPositions(velocities, window_length=25, poly_order=3):
             #Para obviar los casos en los que la trayectoria dura menos que la ventana de suavizado
             pass
         else:
-            print('Smoothing velocities for track:', str(item))
+            print('Smoothing velocities for track: '+ str(item))
             # Savgol filter
             x = pd.DataFrame(savgol_filter(sub.x, window_length, poly_order), columns=['x',])
             y = pd.DataFrame(savgol_filter(sub.y, window_length, poly_order), columns=['y',])
@@ -162,4 +163,42 @@ def alternative_delete_short_trajectories(data, minimumFrames=10):
     data = data.drop(indexNames)
     data = data.reset_index(drop=True)
     
+    return data
+
+
+def difference(array, n=1):
+    """ What np.diff should be for orders higher than 1 """
+    array = np.array(array)
+    return array[n:] - array[:-n]
+
+
+def calculate_jumps(data, interval=1):
+    """ returns a neww dataframe with columns 'dx', 'dy', representing
+        the jump during a jump of lenght 'interval' (n_frames) """
+        
+    col_names = ['frame', 'track', 'x', 'y', 'dx', 'dy']
+    # Creating an empty dataframe to store results
+    out = pd.DataFrame(np.zeros(shape=(1, 6), dtype=np.int64), columns=col_names)
+    
+    for item in set(data.track):      
+        sub = data[data.track==item]
+        
+        if sub.shape[0]<=interval+1:
+            #Para obviar los casos en los que solo hay pocos datos
+            pass
+        else:    
+            printp('Calculating jumps for track: '+ str(item) + '/'+ str(len(set(data.track))))
+            dx = pd.DataFrame(difference(sub.x.values, n=interval), columns=['dx',])
+            dy = pd.DataFrame(difference(sub.y.values, n=interval), columns=['dy',])
+        
+            new_df = pd.concat((sub.frame.reset_index(drop=True), sub.track.reset_index(drop=True), 
+                                sub.x.reset_index(drop=True), sub.y.reset_index(drop=True), dx, dy), 
+                                axis=1, names=col_names, sort=False)
+            out = pd.concat((out, new_df), axis=0)
+        
+    # This is to get rid of the first 'np.zeros' row and to reset indexes
+    data = out.reset_index(drop=True)
+    data = data.drop(0)
+    data = data.reset_index(drop=True)
+        
     return data

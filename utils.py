@@ -122,51 +122,7 @@ def createRectangularROI(df, origin, width, height):
     # Reset indexes and return the new dataFrame
     inside = inside.reset_index(drop=True)
     return inside
-
-
-def meanSquaredDisplacement(data, max_steps='all'):
-    
-    if max_steps == 'all':
-        max_steps = len(data) - 1
-    
-    results = []
-    for i in range(max_steps-1):
-        results.append([i+1, simpleMSD(data, i+1)])
-    
-    results = np.array(results)
-    return results
-
-
-def simpleMSD(data, lagTime):
-    return np.mean((data[lagTime:] - data[:-lagTime])**2)
-
-def plotMSD(data, timePerFrame=1, max_steps='all', log=False):
-    
-    MSD = meanSquaredDisplacement(data, max_steps)
-    if log==True:
-        dt = np.log(MSD[:,0]*timePerFrame)
-        y = np.log(MSD[:,1])
-            
-        fig, ax = plt.subplots(figsize=(8,8), dpi=250)
-        #ax.set_xlim([0,dt.max()])
-        #ax.set_ylim([0,y.max()])
-    
-        ax.set_xlabel('ln(t) (s)')
-        ax.set_ylabel(r'$ln\langle\left( x - x_{0}\right)^{2} \rangle \left( m^{2}\right)$')
-        plt.scatter(dt, y, s=1)
-    else:       
-        dt = MSD[:,0]*timePerFrame
-        y = MSD[:,1]
-    
-        fig, ax = plt.subplots(figsize=(8,8), dpi=250)
-        ax.set_xlim([0,dt.max()])
-        ax.set_ylim([0,y.max()])
-    
-        ax.set_xlabel('t (s)')
-        ax.set_ylabel(r'$\langle\left( x - x_{0}\right)^{2} \rangle \left( m^{2}\right)$')
-        plt.scatter(dt, y, s=1)
-    
-    
+   
     
 def plotPosvsTime(data, timePerFrame=1):
         y = data
@@ -276,6 +232,7 @@ def printProgressBar(iteration, total, prefix = '', suffix = '', decimals = 1, l
 def to_IS_units(data, pixel_ratio):
     pass
 
+
 def toNaturalUnits(circles, particle_diameter, vels_present=False):
     """ 
     Converts data in a typical dataframe [frame, track, x, y] to natural units.
@@ -299,6 +256,7 @@ def toNaturalUnits(circles, particle_diameter, vels_present=False):
     """
     pass
 
+
 def reset_track_indexes(data):
     """ This function takes a dataframe in which some trajectory indexes
         are missing (maybe due to having deleted short trajectories) and
@@ -306,16 +264,17 @@ def reset_track_indexes(data):
     # 'real_number_of_tracks' should be <=  than 'current_last_particle_index'
     real_number_of_tracks = len(set(data['track']))
     # current_last_particle_index = data['track'].max()
-    
-    #@dtype=np.int64
-    #A = dict(zip(original_indexes, fixed_indexes))
+
     original_indexes = np.array(list(set(data['track'])))
+    original_indexes = np.sort(original_indexes) #BE CAREFUUUUL
     fixed_indexes = np.arange(0, real_number_of_tracks, step=1)
     
     # With these two lists we create a dictionary and map old values to new ones
     replacement_dict = dict(zip(original_indexes, fixed_indexes))
     tracks_column = data['track']
     data['track'] = tracks_column.map(replacement_dict)
+    
+    print('Reseting indexes so that the tracks list is continous')
     
     return data
 # =============================================================================
@@ -324,9 +283,27 @@ def reset_track_indexes(data):
 #     data['track'] = tracks_column
 # =============================================================================
     
-    
 
-def play_video_with_labels(videoPath, trajectories, list_of_particles_to_track='all', mean_radius=39):
+def select_tracks_by_lenght(data, min_lenght=0, max_lenght=25000):
+    """ Given a dataframe and a range of lenghts, returns an array with the
+        indexes of tracks with a lenght within those limits """
+    track_lenghts_list = []
+    for part in set(data.track):
+        sub_data = data[data.track == part]
+        lenght = len(sub_data)
+        track_lenghts_list.append([part,lenght])
+    
+    l = pd.DataFrame(track_lenghts_list, columns=['trajectory','lenght'])
+    l = l.sort_values('lenght', ascending=False)
+    l = l.reset_index(drop=True)
+    
+    selection = l[l.lenght <= max_lenght]
+    selection = selection[selection.lenght >= min_lenght]
+    
+    return selection.trajectory.values
+
+
+def play_video_with_labels(videoPath, trajectories, list_of_particles_to_track='all', mean_radius=39, mask_ROI=False):
     video = cv2.VideoCapture(videoPath)
 
     f=1
@@ -353,6 +330,9 @@ def play_video_with_labels(videoPath, trajectories, list_of_particles_to_track='
                     cv2.putText(frame, str(int(row['track'])), (int(row['x']),int(row['y'])), 
                                 cv2.FONT_HERSHEY_SIMPLEX, .6, (255,150,250), 2)
 
+
+        if mask_ROI==True:
+            frame = maskImage(frame, createCircularMask(800,1280, center=[650,400], radius=390))
         # Mostramos en pantalla el video (esperando 3ms entre frame y frame) 
         # hasta que llega al final o se pulsa la tecla q
         cv2.imshow('Video', frame)
@@ -390,3 +370,10 @@ def reorder_rename_dataFrame(data):
     print('Fran is now a happy man')    
     return data
         
+
+
+def printp(string):
+    """ Modification of print function to do everything on one line """
+    import sys
+    sys.stdout.write('\r'+ str(string))
+    sys.stdout.flush()

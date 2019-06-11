@@ -20,8 +20,10 @@ from graphics import densityPlot
 
 if __name__ == "__main__":
   
-    folder = 'D:/videos 03-05-2019/'
-    files = ['pelotas_luzLejana_CamaraCercana_exp1500_fps250_p45_n170',]
+    folder = 'D:/serieDensidad 21-05-2019/'
+    files = ['pelotas_luzLejana_exp1500_fps250_p45_n60', 'pelotas_luzLejana_exp1500_fps250_p45_n90',
+             'pelotas_luzLejana_exp1500_fps250_p45_n120', 'pelotas_luzLejana_exp1500_fps250_p45_n150',
+             'pelotas_luzLejana_exp1500_fps250_p45_n180', 'pelotas_luzLejana_exp1500_fps250_p45_n210']
     extension = '.cine'
     
     for file in files:
@@ -37,7 +39,10 @@ if __name__ == "__main__":
         exposure = vid.all_exposures[0] #in seconds
         n_frames = vid.image_count
         recording_time = n_frames/fps
-        N = 170 # Number of particles
+# =============================================================================
+#         N = 170 # Number of particles
+# =============================================================================
+        N = int(file.split('_')[-1].split('n')[-1]) # Metodo guarrero y temporal
         power = 45 # Power of the fan
         lights = 'luzLejana'
         camera_distance = 0.535 #in meters
@@ -113,10 +118,10 @@ if __name__ == "__main__":
         # TRAJECTORY LINKING
         traj = tp.link_df(circles, 5, memory=0)
         traj = reorder_rename_dataFrame(traj) # Always run after trackpy
-        traj = reset_track_indexes(traj) # Always run after trackpy or calculate_vels, this fills voids
         
         # VELOCITY DERIVATION
         vels = findVelocities(traj)
+        vels = reset_track_indexes(vels) # Always run after deleting traj or calculate_vels, this fills voids
         
         #SAVING RAW DATA
         circles.to_pickle(os.path.join(folder, str(experiment_id)+'_raw_data.pkl'), compression='xz')
@@ -128,12 +133,12 @@ if __name__ == "__main__":
         roi_data = createCircularROI(circles, ROI_center, ROI_radius)
         roi_traj = tp.link_df(roi_data, 5, memory=0)
         roi_traj = reorder_rename_dataFrame(roi_traj) # Always run after trackpy
-        # DELETING SHORT TRAJECTORIES
-        roi_traj = alternative_delete_short_trajectories(roi_traj, minimumFrames=10)
-        roi_traj = reset_track_indexes(roi_traj) # Always run after trackpy or calculate_vels, this fills voids
+        roi_traj = reset_track_indexes(roi_traj) # Always run after deleting traj or calculate_vels, this fills voids
         # DERIVE VELOCITIES
         roi_vels = findVelocities(roi_traj)
-        roivels = reset_track_indexes(roi_vels) # Always run after trackpy or calculate_vels, this fills voids
+        # DELETING SHORT TRAJECTORIES
+        roi_vels = alternative_delete_short_trajectories(roi_vels, minimumFrames=10)
+        roi_vels = reset_track_indexes(roi_vels) # Always run after deleting traj or calculate_vels, this fills voids
         # roi_vels = deleteShortTrajectories(roi_vels, minimumFrames=10)
         # SAVING DATA
         roi_data.to_pickle(os.path.join(folder, str(experiment_id)+'_roi_data.pkl'), compression='xz')
@@ -142,22 +147,3 @@ if __name__ == "__main__":
         # SAVING DATA 'SANTOS' FORMAT
         roi_vels.to_csv(os.path.join(folder, str(experiment_id)+'_pos_vel_ppp.dat'), sep='\t', header=True, index=False)
         
-        
-        # --ACTUAL DATA ANALISYS--
-        
-        # from utils import play_video_with_labels
-        # play_video_with_labels(path, traj, list_of_particles_to_track='all')
-        
-        # READING DATA
-        data = pd.read_pickle(os.path.join(folder, str(experiment_id)+'_raw_data.pkl'), compression='xz')
-        roi_traj = pd.read_pickle(os.path.join(folder, str(experiment_id)+'_roi_trajectories.pkl'), compression='xz')
-        # roi_vels already has deleted traj with less than 100 datapoints
-        roi_vels = pd.read_pickle(os.path.join(folder, str(experiment_id)+'_roi_velocities.pkl'), compression='xz')
-        
-        
-        print('Density plot including all data:')
-        densityPlot(data, nbins=80)
-        print('Density plot inside ROI:')
-        densityPlot(roi_traj, nbins=80)
-        print('Density plot inside ROI without short traj:')
-        densityPlot(roi_vels, nbins=80)
