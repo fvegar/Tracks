@@ -18,8 +18,10 @@ def velocityDistribution(vel_data):
     # First we have to select only velocities
     vels = vel_data[['vx', 'vy']].values    
 
-    seaborn.set_style('whitegrid')
-    seaborn.kdeplot(vels[:,0], bw=0.5)
+# =============================================================================
+#     seaborn.set_style('whitegrid')
+#     seaborn.kdeplot(vels[:,0], bw=0.5)
+# =============================================================================
 
     histPlot = plt.hist(vels, density=True, bins='auto')
     # Another interesting visualization
@@ -202,6 +204,84 @@ def plot_msd_ensemble(data, timePerFrame=1, max_steps='all', column='x', log=Fal
         ax.set_xlabel('t (s)')
         ax.set_ylabel(r'$\langle\left( x - x_{0}\right)^{2} \rangle \left( m^{2}\right)$')
         plt.scatter(dt, y, s=1)
+        
+        
+def velocity_autocorrelation(vel_data, trajectory, max_lag='all'):
+    """ Calculates the velocity autocorrelation function for a single particle
+
+    Parameters
+    ----------
+    vel_data : pandas Dataframe
+        It must be have the usual structure with at least the folowing columns:
+        ['frame', 'track', 'vx', 'vy']
+    trayectory : int)
+        The index of the track we want to colculate de VAC of.
+    max_lag : int, optional (default: 'all')
+        Maximum number of steps (lag time) for which the VAC is calculated     
+
+    Returns
+    -------
+    vac : pandas Dataframe
+        A 1D pandas dataframe of shape N where N is equal to max_steps. 
+        Containing the value of the VAC for each interval.
+    """
+    sub_data = vel_data[vel_data.track==trajectory]
+    sub_data = sub_data[['vx','vy']]
+
+    if max_lag == 'all':
+        max_lag = len(sub_data) - 1
+    
+    results = []
+    for i in range(max_lag-1):
+        if i==0:
+            vel_aut_currentLag = 1
+        else:            
+            vel_aut_currentLag = np.vdot(sub_data[i:], sub_data[:-i]) / np.vdot(sub_data[:-i], sub_data[:-i])
+        results.append(vel_aut_currentLag)
+
+    vac = pd.DataFrame(results)
+    return vac
+
+
+def velocity_autocorrelation_ensemble(vel_data, max_lag='all'):
+    """ Calculates the velocity autocorrelation function for integrating for
+        every particle in the system
+
+    Parameters
+    ----------
+    vel_data : pandas Dataframe
+        It must be have the usual structure with at least the folowing columns:
+        ['frame', 'track', 'vx', 'vy']
+    max_lag : int, optional (default: 'all')
+        Maximum number of steps (lag time) for which the VAC is calculated     
+
+    Returns
+    -------
+    vac : pandas Dataframe
+        A 1D pandas dataframe of shape N where N is equal to max_steps. 
+        Containing the value of the VAC for each interval.
+    """
+    ensemble = pd.DataFrame()
+    for traj in set(vel_data.track):
+        if vel_data[vel_data.track==traj].shape[0] > 2:
+            vel_aut = velocity_autocorrelation(vel_data, traj, max_lag=max_lag)
+            ensemble = pd.concat((ensemble, vel_aut), axis=1)
+            printp('Integrating velocity autocorrelations: '+ str(traj) + '/'+ str(len(set(vel_data.track))))
+    vac = ensemble.mean(axis=1)
+    return vac
+
+
+
+def instant_radial_distribution_function(data, frame):
+    pass
+
+def radial_distribution_function(data, frame):
+    
+    ensemble = pd.DataFrame()
+    for f in set(data.frame):
+        gr = instant_radial_distribution_function(data, f)
+        ensemble = pd.concat((ensemble, gr), axis=1)
+    pass
 
 # =============================================================================
 # def computeExcessKurtosis_a2(kurtosis, dimensions):
