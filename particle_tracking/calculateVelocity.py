@@ -126,7 +126,7 @@ def deleteShortTrajectories(velocities, minimumFrames=150):
         sub = velocities[velocities.track==item]
         
         if sub.shape[0] <= minimumFrames:
-            print('Deleting velocities for track', str(item), '--> Size:', str(sub.shape[0]))
+            printp('Deleting velocities for track: '+str(item)+ ' --> Size: ' + str(sub.shape[0]))
             pass
         else:
             new_df = pd.concat((sub.vx.reset_index(drop=True), sub.vy.reset_index(drop=True), 
@@ -153,7 +153,7 @@ def alternative_delete_short_trajectories(data, minimumFrames=10):
         sub = data[data.track==item]
         n_elements = len(sub)
         if n_elements <= minimumFrames:
-            print('Deleting velocities for track', str(item), '--> Size:', str(n_elements))
+            printp('Deleting velocities for track: '+ str(item),+ ' --> Size: ' + str(n_elements))
             tracks_to_delete.append(item)
     
     # Actual cleaning of short trajectories, first locate indexes   

@@ -11,12 +11,12 @@ import cv2
 import matplotlib.pyplot as plt
 
 def detectContourRadius(contours):
-    """ Returns aan array of all the radiuses detected in a given frame """
+    """ Returns an array of all the radiuses detected in a given frame """
     radius = []
     for c in contours:
-       area = cv2.contourArea(c)
-       equivalent_radius = np.sqrt(area/np.pi)
-       radius.append(equivalent_radius)
+        area = cv2.contourArea(c)
+        equivalent_radius = np.sqrt(area/np.pi)
+        radius.append(equivalent_radius)
     # Now we get those circles' positions and store them in an appropiate format
     radius = np.array(radius)
     return radius
@@ -377,3 +377,9 @@ def printp(string):
     import sys
     sys.stdout.write('\r'+ str(string))
     sys.stdout.flush()
+    
+    
+def distanceToCenter(x, y, x_center, y_center):
+    """ Simple function, given a pair of coordinates x,y. It returns its
+        distances to a central point """
+    return np.sqrt((x-x_center)**2 + (y-y_center)**2)

@@ -10,10 +10,8 @@ from zipfile import ZipFile
 import pandas as pd
 
 
-folder = 'D:/serieDensidad 21-05-2019/'
-experiment_ids = ['5b574b4d34e3740d5b5856db31d389d4', '332e5de3dbde71e3e663dd1fa8c42e7a',
-                  '6217288051f48e7368f8d9089a8e5df4', 'd5d3bb5127d40a45999f7dfcdbfdb250',
-                  'e38395d237a9f02909ce8d4e4aa18ccf', 'f99ab6a9638b9a82cb1e7a6d0db6f024']
+folder = 'D:/pruebas 10-06-2019/'
+experiment_ids = ['1143d64b2fa1cea0c5f81f264f357a70',]
 
 for id in experiment_ids:
 

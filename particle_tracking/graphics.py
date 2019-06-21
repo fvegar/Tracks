@@ -85,3 +85,13 @@ def plot_2D_jumps(data, interval=1, trajectory=1):
     radius = np.sqrt(differences.dx.std()**2 + differences.dy.std()**2)
     c = plt.Circle((differences.dx.mean(), differences.dy.mean()), radius, color='r', fill=False, alpha=0.5)
     ax.add_artist(c)
+    
+    
+def plot_distribution_of_track_lenghts(data):
+    lenghts = []
+    for part in set(data.track):
+        sub_data = data[data.track == part]
+        lenght = len(sub_data)
+        lenghts.append(lenght)
+        
+    plt.hist(lenghts, bins=50)
