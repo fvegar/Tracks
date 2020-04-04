@@ -1,4 +1,4 @@
-# ExpMD
+# Tracks
 
 ## Data Analysis from Experiments particle tracking and Molecular Dynamics simulation
 
