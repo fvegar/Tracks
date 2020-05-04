@@ -29,7 +29,7 @@ Here we explain how to use this software to extract particle positions, trajecto
  * pims
  * trackpy
 
-The key file in this whole process is **__init__.py** (executed with: python __init__.py), firstly, one has to define the folder where .cine files are located:
+The key file in this whole process is **`__init__.py`** (executed with: `python __init__.py`), firstly, one has to define the folder where .cine files are located:
 
 ```python
 if __name__ == "__main__":
@@ -38,7 +38,7 @@ if __name__ == "__main__":
     files = glob.glob(folder + '*Aspas*.cine') # List with all .cine files
 ```
 As we can see, a list of all .cine files (matching a certain naming style) is created. Then the function 
-**detect_particles_and_save_data** is called. This function takes as an argument a path to a .cine file, it
+**`detect_particles_and_save_data`** is called. This function takes as an argument a path to a .cine file, it
 detects all particles, joins their trajectories, derive its velocities and save all to files (plus an information
 text file for each experiment). Using multiple cores.
 
@@ -85,4 +85,4 @@ for .cine videos is:
 
 Also note that an unique experiment_id (ej: '87387719783ab1ba0d1d2008cd1f2ac5') is generated, this will be used to identify each video in the future.
 
-**detect_particles_and_save_data** will then proceed to detect particles in each frame, this is done by calling **detectCirclesVideo**, a function defined in **detect_blobs.py** (it is recommended to inspect how that function works).
+**`detect_particles_and_save_data`** will then proceed to detect particles in each frame, this is done by calling **`detectCirclesVideo`**, a function defined in **`detect_blobs.py`** (it is recommended to inspect how that function works).
