@@ -13,7 +13,7 @@ Both classes of functions should be able to yield with both system-wide and loca
 A full (growing) list of functions will be provided in short.
 
 
-### How to use particle tracking software
+## How to use particle tracking software
 
 Here we explain how to use this software to extract particle positions, trajectories and velocities from a .cine file
 
@@ -29,7 +29,7 @@ Here we explain how to use this software to extract particle positions, trajecto
  * pims
  * trackpy
 
-The key file in this whole process is **__init__.py**, first one has to define the folder where .cine files are located:
+The key file in this whole process is **__init__.py** (executed with: python __init__.py), firstly, one has to define the folder where .cine files are located:
 
 ```python
 if __name__ == "__main__":
@@ -85,4 +85,4 @@ for .cine videos is:
 
 Also note that an unique experiment_id (ej: '87387719783ab1ba0d1d2008cd1f2ac5') is generated, this will be used to identify each video in the future.
 
-**detect_particles_and_save_data** will then proceed to detect particles in each frame, this is done by calling 
+**detect_particles_and_save_data** will then proceed to detect particles in each frame, this is done by calling **detectCirclesVideo**, a function defined in **detect_blobs.py** (it is recommended to inspect how that function works).
