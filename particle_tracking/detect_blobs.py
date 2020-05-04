@@ -8,8 +8,10 @@ import pandas as pd
 import pims
 import cv2
 import numpy as np
-from utils import morphOperation, showImage, printProgressBar, detectContourRadius, alternative_findMeanRadius
-from watershedContours import watershedContours
+from utils import morphOperation, showImage, printProgressBar, detectContourRadius, alternative_findMeanRadius, createCircularMask, maskImage
+# =============================================================================
+# from watershedContours import watershedContours
+# =============================================================================
 
 
 def showImageWithCircles(img, circles):
@@ -116,6 +118,12 @@ def detectCircles_watershed(img, frame_number=0, display_intermediate_steps=Fals
 def alternative_detectCirclesImage(img, frame_number=0, display_intermediate_steps=False, meanRadius=30, thresh=20, opening_kernel=5):
     """ Produces a biased position when particles are not uniform (letters)
         but it is way more robust to changes in ilumination """
+    # FOR CAMERA VERY HIGH, FIRST CREATE CIRCULAR MASK
+    mask = createCircularMask(800, 1280, center=[649,392], radius=408)
+    img = maskImage(img, mask)
+
+
+
     if display_intermediate_steps==True:
         showImage(img, name='Original')
     bw = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)

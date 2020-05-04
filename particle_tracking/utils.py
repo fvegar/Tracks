@@ -1,14 +1,203 @@
 # -*- coding: utf-8 -*-
 """
-Created on Wed Oct 10 10:08:26 2018
+Collection of utility functions, some of them are only used internally and others may
+be broken.
 
 @author: malopez
 """
+import glob
 import numpy as np
 import pandas as pd
 import pims
 import cv2
 import matplotlib.pyplot as plt
+# =============================================================================
+# from scipy.signal import find_peaks
+# =============================================================================
+
+
+class Peak:
+    # 
+    def __init__(self, startidx):
+        self.born = self.left = self.right = startidx
+        self.died = None
+
+    def get_persistence(self, seq):
+        return float("inf") if self.died is None else seq[self.born] - seq[self.died]
+
+def get_persistent_homology(seq):
+    peaks = []
+    # Maps indices to peaks
+    idxtopeak = [None for s in seq]
+    # Sequence indices sorted by values
+    indices = range(len(seq))
+    indices = sorted(indices, key = lambda i: seq[i], reverse=True)
+
+    # Process each sample in descending order
+    for idx in indices:
+        lftdone = (idx > 0 and idxtopeak[idx-1] is not None)
+        rgtdone = (idx < len(seq)-1 and idxtopeak[idx+1] is not None)
+        il = idxtopeak[idx-1] if lftdone else None
+        ir = idxtopeak[idx+1] if rgtdone else None
+
+        # New peak born
+        if not lftdone and not rgtdone:
+            peaks.append(Peak(idx))
+            idxtopeak[idx] = len(peaks)-1
+
+        # Directly merge to next peak left
+        if lftdone and not rgtdone:
+            peaks[il].right += 1
+            idxtopeak[idx] = il
+
+        # Directly merge to next peak right
+        if not lftdone and rgtdone:
+            peaks[ir].left -= 1
+            idxtopeak[idx] = ir
+
+        # Merge left and right peaks
+        if lftdone and rgtdone:
+            # Left was born earlier: merge right to left
+            if seq[peaks[il].born] > seq[peaks[ir].born]:
+                peaks[ir].died = idx
+                peaks[il].right = peaks[ir].right
+                idxtopeak[peaks[il].right] = idxtopeak[idx] = il
+            else:
+                peaks[il].died = idx
+                peaks[ir].left = peaks[il].left
+                idxtopeak[peaks[ir].left] = idxtopeak[idx] = ir
+
+    # This is optional convenience
+    return sorted(peaks, key=lambda p: p.get_persistence(seq), reverse=True)
+
+
+def find_ideal_thresh_value(videoPath):
+
+    video = cv2.VideoCapture(videoPath)
+
+    # I read the first 20 frames of the video to build an histogram
+    frames = []
+    n = 0
+    while(video.isOpened()):
+        # Leemos el frame actual y lo asignamos a la variable frame
+        frameExists, frame = video.read()
+        frames.append(frame)
+        n+=1
+        if n > 19:
+            break
+
+    # From this frame i transform it into a long 1D array
+    frames = np.array(frames).ravel()
+    hist, bins = np.histogram(frames, bins=100)
+
+# =============================================================================
+#     peaks = find_peaks(hist, width=1.75)[0]
+#     downs = find_peaks(-hist, width=1.75)[0]
+# =============================================================================
+    peaks = get_persistent_homology(hist)
+
+    # The ideal thresh value will be right after (+8 bins) the first maxima
+    #ideal_thresh = bins[peaks[0]+4]
+    ideal_thresh = bins[peaks[0].born+11]
+
+    # The following code is used to check if this method works
+# =============================================================================
+#     for file in files:
+#       thresh = find_ideal_thresh_value(file)
+#       print(thresh)
+#       cap = cv2.VideoCapture(file)
+#       rval, frame = cap.read()
+#       _, binarized = cv2.threshold(frame, thresh, 255.0, cv2.THRESH_BINARY)
+#       showImage(binarized, name='Binary')
+# =============================================================================
+    return ideal_thresh
+
+
+def angle_from_2D_points(array_x, array_y):
+    """ Given two 1D arrays, corresponding to 'x' and 'y' coordinates of 2D points,
+        this function returns the angle of those points directions
+
+    Parameters
+    ----------
+    array_x : array
+        1D array of 'x' positions, ints or floats.        
+    array_y : array
+        1D array of 'y' positions, ints or floats.   
+    
+    Returns
+    -------
+    array
+        A 1D numpy array with points angles expressed in degrees.
+    """
+    rad_angles = -np.arctan2(array_y, array_x) % (2 * np.pi)
+    deg_angles = np.rad2deg(rad_angles)
+    return deg_angles
+
+
+def createCircularROI(pos_data, center, radius):
+    """ Select points within a given radius of a central point. Circular Region of Interest defined
+        by its center and radius.
+
+    Parameters
+    ----------
+    pos_data : pandas Ddataframe
+        It must be have the usual structure with at least the folowing columns:
+        ['frame', 'track', 'x', 'y']   
+    center : tuple or list
+        Pair of coordinates representing the central point of the Region of Interest.
+        It must have the same units as 'x', 'y' in pos_data
+    radius : float
+        Value of the ROI radius
+    
+    Returns
+    -------
+    pandas Dataframe
+        Dataframe with the same columns as the input but selecting only the rows
+        for which (x,y) is located inside the ROI
+    """
+    # Find squared distance of each detected position to the center
+    r2 = (pos_data['x'] - center[0])**2 + (pos_data['y'] - center[1])**2
+    # Select only those rows that fall inside the ROI
+    inside = pos_data.loc[r2 <= radius**2]
+    # Reset indexes and return the new dataFrame
+    inside = inside.reset_index(drop=True)
+    return inside
+
+
+def createRectangularROI(pos_data, origin, width, height):
+    """ Select points that are in a rectangular area. Rectangular Region of Interest defined
+        by its lower left corner, height and width.
+
+    Parameters
+    ----------
+    pos_data : pandas Ddataframe
+        It must be have the usual structure with at least the folowing columns:
+        ['frame', 'track', 'x', 'y']   
+    origin : tuple or list
+        Pair of coordinates representing the origin of the ROI (lower left corner).
+        It must have the same units as 'x', 'y' in pos_data
+    width : float
+        Length of the box in the x coordinate
+    height : float
+        Length of the box in the y coordinate
+    
+    Returns
+    -------
+    pandas Dataframe
+        Dataframe with the same columns as the input but selecting only the rows
+        for which (x,y) is located inside the ROI
+    """
+    x0 = origin[0]
+    y0 = origin[1]
+    # Select only those rows that fall inside the ROI
+    inside = pos_data[pos_data['x'] >= x0]
+    inside = inside[inside['y'] >= y0]
+    inside = inside[inside['x'] <= (x0+width)]
+    inside = inside[inside['y'] <= (y0+height)]
+    # Reset indexes and return the new dataFrame
+    inside = inside.reset_index(drop=True)
+    return inside
+
 
 def detectContourRadius(contours):
     """ Returns an array of all the radiuses detected in a given frame """
@@ -94,36 +283,9 @@ def findMeanRadius(videoPath, n_frames=5):
     result = result.reset_index(drop=True)
     
     print('Mean Radius calculation:',result.shape[0]/n_frames, 'particles per frame.', n_frames, 'frames')
-    return result[2].mean()      
-        
-        
-def createCircularROI(df, center, radius):
-    """ Select circles that are within a given radius of a central point
-        (represented by a tuple) """
-    # Find squared distance of each detected position to the center
-    r2 = (df.x - center[0])**2 + (df.y - center[1])**2
-    # Select only those rows that fall inside the ROI
-    inside = df.loc[r2 <= radius**2]
-    # Reset indexes and return the new dataFrame
-    inside = inside.reset_index(drop=True)
-    return inside
+    return result[2].mean()
 
 
-def createRectangularROI(df, origin, width, height):
-    """ Select circles that are in a rectangular area (origin point
-        (represented by a tuple) """
-    x0 = origin[0]
-    y0 = origin[1]
-    # Select only those rows that fall inside the ROI
-    inside = df[df.x >= x0]
-    inside = inside[inside.y >= y0]
-    inside = inside[inside.x <= (x0+width)]
-    inside = inside[inside.y <= (y0+height)]
-    # Reset indexes and return the new dataFrame
-    inside = inside.reset_index(drop=True)
-    return inside
-   
-    
 def plotPosvsTime(data, timePerFrame=1):
         y = data
         dt = np.linspace(0,y.size, y.size)*timePerFrame
@@ -138,6 +300,24 @@ def plotPosvsTime(data, timePerFrame=1):
         
         
 def createCircularMask(h, w, center=None, radius=None):
+    """ Creates an OpenCV circular mask
+
+    Parameters
+    ----------
+    h : int
+        Height of the image for which the mask is going to be used  
+    w : int
+        Width of the image for which the mask is going to be used 
+    center : tuple or list, optional
+        Pair of coordinates for the mask's central point. If not specified uses: [w/2, h/2]
+    radius : float, optional
+        Value of the mask radius. If not specified uses max possible value
+    
+    Returns
+    -------
+    mask : array
+        Mask for using with the image (array of True/False values)
+    """
 
     if center is None: # use the middle of the image
         center = [int(w/2), int(h/2)]
@@ -152,6 +332,21 @@ def createCircularMask(h, w, center=None, radius=None):
 
 
 def maskImage(img, mask):
+    """ Masks an input image
+
+    Parameters
+    ----------
+    img : array
+        Input image
+    mask : array
+        True/False array with same shape as input image
+
+    Returns
+    -------
+    masked_img : array
+        output masked image
+
+    """
     masked_img = img.copy()
     masked_img[~mask] = 0
     
@@ -229,10 +424,6 @@ def printProgressBar(iteration, total, prefix = '', suffix = '', decimals = 1, l
         print()
         
 
-def to_IS_units(data, pixel_ratio):
-    pass
-
-
 def toNaturalUnits(circles, particle_diameter, vels_present=False):
     """ 
     Converts data in a typical dataframe [frame, track, x, y] to natural units.
@@ -260,7 +451,19 @@ def toNaturalUnits(circles, particle_diameter, vels_present=False):
 def reset_track_indexes(data):
     """ This function takes a dataframe in which some trajectory indexes
         are missing (maybe due to having deleted short trajectories) and
-        resets indexes so that we can loop over the tracks with 'range' """
+        resets indexes so that we can loop over the tracks with 'range' 
+
+    Parameters
+    ----------
+    data : pandas Dataframe
+        Standard dataframe obtained from our tracking proccess. 
+        At least with columns ['frame', 'track', 'x', 'y']
+
+    Returns
+    -------
+    data : pandas Dataframe
+        Return dataframe with same shape and info but with changed 'track' indexes
+    """
     # 'real_number_of_tracks' should be <=  than 'current_last_particle_index'
     real_number_of_tracks = len(set(data['track']))
     # current_last_particle_index = data['track'].max()
@@ -275,14 +478,8 @@ def reset_track_indexes(data):
     data['track'] = tracks_column.map(replacement_dict)
     
     print('Reseting indexes so that the tracks list is continous')
-    
     return data
-# =============================================================================
-#     tracks_column = data['track'].astype('int32')
-#     tracks_column.replace(to_replace=original_indexes, value=fixed_indexes, inplace=True)
-#     data['track'] = tracks_column
-# =============================================================================
-    
+
 
 def select_tracks_by_lenght(data, min_lenght=0, max_lenght=25000):
     """ Given a dataframe and a range of lenghts, returns an array with the
@@ -383,3 +580,18 @@ def distanceToCenter(x, y, x_center, y_center):
     """ Simple function, given a pair of coordinates x,y. It returns its
         distances to a central point """
     return np.sqrt((x-x_center)**2 + (y-y_center)**2)
+
+
+def present_in_folder(experiment_id, folder):
+    """ Returns True if there are files containing 'experiment_id' in a given folder """
+    files_in_folder = glob.glob(folder + '*')
+    files_containing_exp_id = glob.glob(folder+experiment_id+'*')
+
+    present = False
+    for file in files_containing_exp_id:
+        if file in files_in_folder:
+            present = True
+
+    return present
+
+
