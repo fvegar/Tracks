@@ -64,7 +64,7 @@ The parameters that define each experiment are hardcoded in the definition of th
 
     lights = 'luzLejana'
     camera_distance = 0.924 #in meters (bolas, cercana 0.535)
-    pixel_ratio = 1950 #in px/meter, CAMBIARLO
+    pixel_ratio = 1950 #in px/meter
     particle_diameter_px = 79
     particle_diameter_m = 0.0725
     particle_shape = 'rotating disk'
@@ -84,3 +84,5 @@ for .cine videos is:
 > file = 'serieAspas_N50_p23_1.cine'
 
 Also note that an unique experiment_id (ej: '87387719783ab1ba0d1d2008cd1f2ac5') is generated, this will be used to identify each video in the future.
+
+**detect_particles_and_save_data** will then proceed to detect particles in each frame, this is done by calling 
