@@ -29,4 +29,17 @@ Here we explain how to use this software to extract particle positions, trajecto
  * pims
  * trackpy
 
-The key file here is **__init__.py**
+The key file in this whole process is **__init__.py**, first one has to define the folder where .cine files are located:
+
+```python
+if __name__ == "__main__":
+
+    folder = 'D:/'
+    files = glob.glob(folder + '*Aspas*.cine') # List with all .cine files
+```
+As we can see, a list of all .cine files (matching a certain naming style) is created. Then the function 
+**detect_particles_and_save_data** is called. This function takes as an argument a path to a .cine file, it
+detects all particles, joins their trajectories, derive its velocities and save all to files (plus an information
+text file for each experiment)
+
+> Resulting data files are saved in a **pickle** binary format with **xz** compression.
