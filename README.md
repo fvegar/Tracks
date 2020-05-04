@@ -81,6 +81,6 @@ The parameters that define each experiment are hardcoded in the definition of th
 As we can see, some parameters such as the number of particles (N) or fan power (P) are read from the file name. So the naming convetion
 for .cine videos is:
 
-> serieAspas_N50_p23_1.cine
+> file = 'serieAspas_N50_p23_1.cine'
 
 Also note that an unique experiment_id (ej: '87387719783ab1ba0d1d2008cd1f2ac5') is generated, this will be used to identify each video in the future.
