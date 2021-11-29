@@ -2,8 +2,6 @@
 """
 Created on Wed Dec 12 10:24:32 2018
 
-@author: malopez
-"""
 import pandas as pd
 import pims
 import cv2
