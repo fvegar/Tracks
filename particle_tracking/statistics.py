@@ -2,8 +2,6 @@
 """
 Created on Mon Jun 10 10:34:29 2019
 
-@author: malopez
-"""
 
 import numpy as np
 import pandas as pd
