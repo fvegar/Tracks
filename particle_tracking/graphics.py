@@ -2,8 +2,6 @@
 """
 Created on Mon May 13 19:06:04 2019
 
-@author: malopez
-"""
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.stats import kde
