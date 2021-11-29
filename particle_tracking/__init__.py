@@ -2,8 +2,6 @@
 """
 Created on Mon May 13 19:04:49 2019
 
-@author: malopez
-"""
 import os
 from functools import partial
 from multiprocessing import Pool
