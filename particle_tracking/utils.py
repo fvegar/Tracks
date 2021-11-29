@@ -3,8 +3,6 @@
 Collection of utility functions, some of them are only used internally and others may
 be broken.
 
-@author: malopez
-"""
 import glob
 import numpy as np
 import pandas as pd
