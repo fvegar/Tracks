@@ -2,8 +2,6 @@
 """
 Created on Sat May  2 19:56:44 2020
 
-@author: malopez
-"""
 import cv2
 import pims
 import glob
