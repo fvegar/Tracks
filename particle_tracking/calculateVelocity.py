@@ -2,9 +2,6 @@
 """
 Created on Mon Jan 21 17:05:37 2019
 
-@author: malopez
-"""
-
 import pandas as pd
 import numpy as np
 from scipy.signal import savgol_filter, buttord, butter, filtfilt
